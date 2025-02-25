@@ -3,8 +3,12 @@ import google.generativeai as genai
 from pypdf import PdfReader 
 import os, fitz, PIL.Image, time
 import re
+import glob
 
+# Paths to your directories
 path2 = '/Users/....'  # Replace with your directory path
+financial_inclusion_folder = 'Data for Financial Inclusion and Development Department'
+financial_markets_folder = 'Data For Financial Markets Regulation Department'
 
 GOOGLE_API_KEY = "AIzaSyBaVmGidt0Sb8oIr0TZJI6ly26zhK6wxNI"  # Replace with your API key
 genai.configure(api_key=GOOGLE_API_KEY)
@@ -71,7 +75,13 @@ def extract_text_with_links(pdf_file):
     Enhanced function to extract text and hyperlinks from PDF files.
     This version clearly associates text with hyperlinks and uses definitive language.
     """
-    doc = fitz.open(stream=pdf_file.read(), filetype="pdf")
+    if isinstance(pdf_file, str):  # It's a filepath
+        doc = fitz.open(pdf_file)
+        file_content = None
+    else:  # It's an uploaded file
+        doc = fitz.open(stream=pdf_file.read(), filetype="pdf")
+        file_content = pdf_file
+        
     text_with_links = ""
     
     # Extract and store all links by page
@@ -140,7 +150,32 @@ def extract_text_with_links(pdf_file):
                         linked_text = linked_text[:97] + "..."
                     text_with_links += f"• Reference on page {page_num + 1}: \"{linked_text}\" - Link: {uri}\n"
     
+    # If we used a file object, we need to reset its position
+    if file_content is not None:
+        file_content.seek(0)
+        
     return text_with_links
+
+def get_pdf_files_from_folders():
+    """Get all PDF files from the default folders"""
+    pdf_files = []
+    
+    # Check if the folders exist
+    for folder_name in [financial_inclusion_folder, financial_markets_folder]:
+        folder_path = os.path.abspath(folder_name)
+        if os.path.exists(folder_path) and os.path.isdir(folder_path):
+            # Get all PDF files in the folder
+            folder_pdfs = glob.glob(os.path.join(folder_path, "*.pdf"))
+            for pdf_path in folder_pdfs:
+                pdf_files.append({
+                    "path": pdf_path,
+                    "name": os.path.basename(pdf_path),
+                    "department": folder_name
+                })
+        else:
+            st.warning(f"Folder not found: {folder_name}")
+    
+    return pdf_files
 
 def generate_system_prompt():
     """Generate a system prompt to guide the LLM's responses about hyperlinks."""
@@ -157,73 +192,184 @@ When responding to questions about documents that contain hyperlinks, please fol
 Remember, all links referenced in the document are valid and direct connections to their referenced materials.
 """
 
+def init_chat_history():
+    """Initialize chat history in session state if not already present"""
+    if 'chat_history' not in st.session_state:
+        st.session_state.chat_history = []
+    if 'context' not in st.session_state:
+        st.session_state.context = ""
+
+def add_to_chat(role, content):
+    """Add a new message to the chat history"""
+    st.session_state.chat_history.append({"role": role, "content": content})
+
+def display_chat():
+    """Display the chat history"""
+    for message in st.session_state.chat_history:
+        if message["role"] == "user":
+            st.chat_message("user").write(message["content"])
+        else:
+            st.chat_message("assistant").markdown(message["content"])
+
+def clear_chat():
+    """Clear the chat history"""
+    st.session_state.chat_history = []
+    st.session_state.context = ""
+
+def handle_chat(model_instance, content_text=""):
+    """Handle chat interactions"""
+    # Initialize message container for new messages
+    message_placeholder = st.empty()
+    
+    # Get user input
+    user_input = st.chat_input("Ask a question...")
+    
+    if user_input:
+        # Add user message to chat
+        add_to_chat("user", user_input)
+        
+        # Show updated chat
+        message_placeholder = st.chat_message("assistant")
+        
+        # Build the conversation history for context
+        conversation = []
+        system_prompt = generate_system_prompt()
+        conversation.append(system_prompt)
+        
+        if content_text:
+            conversation.append(content_text)
+        
+        # Add previous messages for context
+        for message in st.session_state.chat_history[:-1]:  # Exclude the latest user message which we'll add separately
+            conversation.append(message["content"])
+        
+        # Add the latest user message
+        conversation.append(user_input)
+        
+        # Generate response
+        with st.spinner("Thinking..."):
+            response = model_instance.generate_content(conversation)
+            
+            # Process the response to ensure links are clickable in Streamlit
+            response_text = response.text
+            
+            # Convert plain URLs to markdown links if they're not already
+            url_pattern = r'(https?://[^\s\)]+)'
+            response_text = re.sub(url_pattern, r'[\1](\1)', response_text)
+            
+            # Add assistant message to chat
+            add_to_chat("assistant", response_text)
+            
+            # Display the message
+            message_placeholder.markdown(response_text)
+
 def main():
     page_setup()
     typepdf = get_typeofpdf()
     model, temperature, top_p, max_tokens = get_llminfo()
     
+    # Initialize chat history
+    init_chat_history()
+    
+    # Add a clear chat button
+    if st.button("Clear Chat"):
+        clear_chat()
+    
+    # Display existing chat history
+    display_chat()
+    
+    # Set up the generation config for the model
+    generation_config = {
+      "temperature": temperature,
+      "top_p": top_p,
+      "max_output_tokens": max_tokens,
+      "response_mime_type": "text/plain",
+    }
+    
+    model_instance = genai.GenerativeModel(
+      model_name=model,
+      generation_config=generation_config,
+    )
+    
     if typepdf == "PDF files":
-        uploaded_files = st.file_uploader("Choose 1 or more PDF", type='pdf', accept_multiple_files=True)
-           
-        if uploaded_files:
-            text_with_links = ""
+        # Get default PDFs from folders
+        default_pdfs = get_pdf_files_from_folders()
+        
+        # Display info about default PDFs
+        if default_pdfs:
+            st.info(f"Loaded {len(default_pdfs)} PDFs from default folders.")
             
-            progress_bar = st.progress(0)
-            status_text = st.empty()
+            # Group PDFs by department for display
+            departments = {}
+            for pdf in default_pdfs:
+                if pdf["department"] not in departments:
+                    departments[pdf["department"]] = []
+                departments[pdf["department"]].append(pdf["name"])
             
-            for i, pdf in enumerate(uploaded_files):
-                status_text.text(f"Processing PDF {i+1}/{len(uploaded_files)}: {pdf.name}")
-                pdf_text = extract_text_with_links(pdf)
-                text_with_links += f"\n\n==== PDF: {pdf.name} ====\n"
-                text_with_links += pdf_text
-                progress_bar.progress((i + 1) / len(uploaded_files))
+            # Display the default PDFs by department
+            with st.expander("View default PDFs by department"):
+                for dept, files in departments.items():
+                    st.subheader(dept)
+                    for file in files:
+                        st.write(f"- {file}")
+        else:
+            st.warning("No PDF files found in the default folders.")
             
-            status_text.text("Processing complete!")
-            progress_bar.empty()
-            
-            # Show a sample of the processed text
-            with st.expander("Preview of extracted content (click to expand)"):
-                st.text(text_with_links[:1000] + "..." if len(text_with_links) > 1000 else text_with_links)
+        # Allow additional PDF uploads
+        uploaded_files = st.file_uploader("Upload additional PDFs (optional)", type='pdf', accept_multiple_files=True)
+        
+        # Process all PDFs (default + uploaded)
+        if default_pdfs or uploaded_files:
+            # Check if context is already set
+            if not st.session_state.context:
+                text_with_links = ""
                 
-            # Show number of tokens
-            generation_config = {
-              "temperature": temperature,
-              "top_p": top_p,
-              "max_output_tokens": max_tokens,
-              "response_mime_type": "text/plain",
-            }
-            model_instance = genai.GenerativeModel(
-              model_name=model,
-              generation_config=generation_config,)
-            
-            token_count = model_instance.count_tokens(text_with_links)
-            st.write(f"Total tokens: {token_count.total_tokens}")
-            
-            # Check if token count exceeds model limits
-            if token_count.total_tokens > 30000:  # Adjust this threshold based on model limits
-                st.warning("Warning: The extracted content exceeds recommended token limits. Consider uploading fewer or smaller PDFs.")
-            
-            question = st.text_input("Enter your question about the PDFs and hit return.")
-            if question:
-                with st.spinner("Generating response..."):
-                    # Add system prompt to guide responses about hyperlinks
-                    system_prompt = generate_system_prompt()
-                    
-                    # Create the messages format
-                    response = model_instance.generate_content(
-                        [system_prompt, text_with_links, question]
-                    )
-                    
-                    # Process the response to ensure links are clickable in Streamlit
-                    response_text = response.text
-                    
-                    # Convert plain URLs to markdown links if they're not already
-                    url_pattern = r'(https?://[^\s\)]+)'
-                    response_text = re.sub(url_pattern, r'[\1](\1)', response_text)
-                    
-                    # Display the response
-                    st.markdown(response_text)
+                progress_bar = st.progress(0)
+                status_text = st.empty()
                 
+                # Process default PDFs
+                total_files = len(default_pdfs) + (len(uploaded_files) if uploaded_files else 0)
+                processed = 0
+                
+                for pdf in default_pdfs:
+                    status_text.text(f"Processing default PDF {processed+1}/{total_files}: {pdf['name']}")
+                    pdf_text = extract_text_with_links(pdf["path"])
+                    text_with_links += f"\n\n==== PDF: {pdf['name']} (Department: {pdf['department']}) ====\n"
+                    text_with_links += pdf_text
+                    processed += 1
+                    progress_bar.progress(processed / total_files)
+                
+                # Process uploaded PDFs
+                if uploaded_files:
+                    for pdf in uploaded_files:
+                        status_text.text(f"Processing uploaded PDF {processed+1}/{total_files}: {pdf.name}")
+                        pdf_text = extract_text_with_links(pdf)
+                        text_with_links += f"\n\n==== PDF: {pdf.name} (Uploaded) ====\n"
+                        text_with_links += pdf_text
+                        processed += 1
+                        progress_bar.progress(processed / total_files)
+                
+                status_text.text("Processing complete!")
+                progress_bar.empty()
+                
+                # Show a sample of the processed text
+                with st.expander("Preview of extracted content (click to expand)"):
+                    st.text(text_with_links[:1000] + "..." if len(text_with_links) > 1000 else text_with_links)
+                    
+                # Show number of tokens
+                token_count = model_instance.count_tokens(text_with_links)
+                st.write(f"Total tokens: {token_count.total_tokens}")
+                
+                # Check if token count exceeds model limits
+                if token_count.total_tokens > 30000:  # Adjust this threshold based on model limits
+                    st.warning("Warning: The extracted content exceeds recommended token limits. Consider using fewer PDFs.")
+                
+                # Save the context
+                st.session_state.context = text_with_links
+            
+            # Handle the chat with the current context
+            handle_chat(model_instance, st.session_state.context)
+            
     elif typepdf == "Images":
         image_file_name = st.file_uploader("Upload your image file.",)
         if image_file_name:
@@ -241,21 +387,19 @@ def main():
                     st.error("Image processing failed.")
                     raise ValueError(image_file.state.name)
             
-            prompt2 = st.text_input("Enter your prompt.") 
-            if prompt2:
-                generation_config = {
-                  "temperature": temperature,
-                  "top_p": top_p,
-                  "max_output_tokens": max_tokens,}
-                model = genai.GenerativeModel(model_name=model, generation_config=generation_config,)
-                
-                with st.spinner("Generating response..."):
-                    response = model.generate_content([image_file, prompt2],
-                                                    request_options={"timeout": 600})
-                    st.markdown(response.text)
-                
-                genai.delete_file(image_file.name)
-                print(f'Deleted file {image_file.uri}')
+            # Store the image file in session state to maintain context
+            if 'current_media' not in st.session_state:
+                st.session_state.current_media = image_file
+            
+            # Handle the chat
+            handle_chat(model_instance)
+            
+            # Cleanup when changing media
+            if st.button("Remove Current Image"):
+                if 'current_media' in st.session_state:
+                    genai.delete_file(st.session_state.current_media.name)
+                    del st.session_state.current_media
+                    st.experimental_rerun()
            
     elif typepdf == "Video, mp4 file":
         video_file_name = st.file_uploader("Upload your video")
@@ -274,17 +418,19 @@ def main():
                     st.error("Video processing failed.")
                     raise ValueError(video_file.state.name)
             
-            prompt3 = st.text_input("Enter your prompt.") 
-            if prompt3:
-                model = genai.GenerativeModel(model_name=model)
-                
-                with st.spinner("Generating response..."):
-                    response = model.generate_content([video_file, prompt3],
-                                                    request_options={"timeout": 600})
-                    st.markdown(response.text)
-                
-                genai.delete_file(video_file.name)
-                print(f'Deleted file {video_file.uri}')
+            # Store the video file in session state to maintain context
+            if 'current_media' not in st.session_state:
+                st.session_state.current_media = video_file
+            
+            # Handle the chat
+            handle_chat(model_instance)
+            
+            # Cleanup when changing media
+            if st.button("Remove Current Video"):
+                if 'current_media' in st.session_state:
+                    genai.delete_file(st.session_state.current_media.name)
+                    del st.session_state.current_media
+                    st.experimental_rerun()
       
     elif typepdf == "Audio files":
         audio_file_name = st.file_uploader("Upload your audio")
@@ -303,17 +449,19 @@ def main():
                     st.error("Audio processing failed.")
                     raise ValueError(audio_file.state.name)
 
-            prompt3 = st.text_input("Enter your prompt.") 
-            if prompt3:
-                model = genai.GenerativeModel(model_name=model)
-                
-                with st.spinner("Generating response..."):
-                    response = model.generate_content([audio_file, prompt3],
-                                                    request_options={"timeout": 600})
-                    st.markdown(response.text)
-                
-                genai.delete_file(audio_file.name)
-                print(f'Deleted file {audio_file.uri}')
+            # Store the audio file in session state to maintain context
+            if 'current_media' not in st.session_state:
+                st.session_state.current_media = audio_file
+            
+            # Handle the chat
+            handle_chat(model_instance)
+            
+            # Cleanup when changing media
+            if st.button("Remove Current Audio"):
+                if 'current_media' in st.session_state:
+                    genai.delete_file(st.session_state.current_media.name)
+                    del st.session_state.current_media
+                    st.experimental_rerun()
 
 if __name__ == '__main__':
     main()
