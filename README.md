@@ -59,6 +59,8 @@ The system uses a *custom knowledge base* of *28 PDF circulars* from:
 - **APIs**: Google (AI, Speech, TTS)  
 - **Hardware**: Microphone  
 
+![SIH2024_IDEA_Presentation_Format (1) pptx](https://github.com/user-attachments/assets/7e097c57-53f7-4a17-9d18-37e51e63b11c)
+
 ---
 
 ## 🚀 Installation & Setup
