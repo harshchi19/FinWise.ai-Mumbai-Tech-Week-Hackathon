@@ -218,9 +218,9 @@ def create_embeddings_and_faiss(chunks):
         # Create embeddings for each text
         embeddings = []
         for text in texts:
-            # Use Gemini to create embeddings - FIXED MODEL NAME
+            # Use Gemini to create embeddings
             embedding = genai.embed_content(
-                model="models/embedding-001",  # Fixed: Added 'models/' prefix
+                model="models/embedding-001",
                 content=text,
                 task_type="retrieval_document"
             )
@@ -231,17 +231,14 @@ def create_embeddings_and_faiss(chunks):
     
     # Extract texts from chunks
     texts = [chunk.page_content for chunk in chunks]
+    metadatas = [chunk.metadata for chunk in chunks]
     
     # Get embeddings using Google's embedding API
     embeddings = get_embeddings(texts)
     
     # Initialize FAISS index for similarity search
-    index = FAISS.from_embeddings(
-        texts, 
-        embeddings, 
-        [chunk.metadata for chunk in chunks],
-        normalize_L2=True
-    )
+    # Fixed: Corrected parameters for FAISS.from_embeddings
+    index = FAISS(embeddings, texts, metadatas)
     
     return index
 
@@ -249,7 +246,7 @@ def retrieve_similar_chunks(index, query, top_k=3):
     """Retrieve most similar chunks to the query"""
     # Create query embedding
     query_embedding = genai.embed_content(
-        model="models/embedding-001",  # Fixed: Added 'models/' prefix
+        model="models/embedding-001",
         content=query,
         task_type="retrieval_query"
     )
