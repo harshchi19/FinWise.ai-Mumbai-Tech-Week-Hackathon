@@ -8,6 +8,7 @@ The system uses a *custom knowledge base* of *28 PDF circulars* from:
 - *Financial Markets Regulation Department*
 - *Department of Regulation (Diagram Reports)*
 
+# Refer to responseretrieval.py and Rag.py for the code.
 ---
 
 ## 🏗 System Architecture
