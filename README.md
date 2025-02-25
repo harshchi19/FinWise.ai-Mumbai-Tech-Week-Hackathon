@@ -3,6 +3,17 @@
 ## 🚀 Overview
 An *AI-powered chatbot* that processes *Reserve Bank of India (RBI)* financial circulars, enabling users to retrieve *context-aware responses* from regulatory documents. Built with *Google Gemini AI*, it supports *text, images, videos, audio*, and includes *speech-to-text* and *text-to-speech* capabilities.
 
+## 📌 Demo Questions
+Here are **sample queries** that users can ask the chatbot:
+
+1. **How did the Revolving Fund (RF) amount change between 2020 and 2024?**  
+2. **What is the repayment schedule for term loans?**  
+3. **How many districts have been identified as having minority community concentration?**  
+4. **What measures should banks take to step up their advances to SCs/STs?**  
+5. **What is the contribution of UPI in the payment system-wise breakup of digital payments?**  
+
+---
+
 The system uses a *custom knowledge base* of *28 PDF circulars* from:
 - *Financial Inclusion and Development Department*
 - *Financial Markets Regulation Department*
