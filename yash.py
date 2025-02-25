@@ -9,6 +9,7 @@ import glob
 path2 = '/Users/....'  # Replace with your directory path
 financial_inclusion_folder = 'Data for Financial Inclusion and Development Department'
 financial_markets_folder = 'Data For Financial Markets Regulation Department'
+financial_report = 'Diagram Report'
 
 GOOGLE_API_KEY = "AIzaSyBaVmGidt0Sb8oIr0TZJI6ly26zhK6wxNI"  # Replace with your API key
 genai.configure(api_key=GOOGLE_API_KEY)
@@ -161,7 +162,7 @@ def get_pdf_files_from_folders():
     pdf_files = []
     
     # Check if the folders exist
-    for folder_name in [financial_inclusion_folder, financial_markets_folder]:
+    for folder_name in [financial_inclusion_folder, financial_markets_folder, financial_report]:
         folder_path = os.path.abspath(folder_name)
         if os.path.exists(folder_path) and os.path.isdir(folder_path):
             # Get all PDF files in the folder
