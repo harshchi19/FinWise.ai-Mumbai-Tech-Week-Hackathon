@@ -25,6 +25,9 @@ The system uses a *custom knowledge base* of *28 PDF circulars* from:
 - Extracts data from *PDFs, images, videos, and audio* via Google Generative AI.
 - Handles uploads and integrates content into responses.
 
+![image](https://github.com/user-attachments/assets/a594906e-46ac-4f8c-b6bd-843024de3bc9)
+
+![image](https://github.com/user-attachments/assets/02912da1-512e-42cd-9fb4-76ab5ecf56af)
 
 ---
 
@@ -57,8 +60,7 @@ The system uses a *custom knowledge base* of *28 PDF circulars* from:
 ## 🚀 Installation & Setup
 ### 1️⃣ *Clone the Repository*
 ```bash
-git clone https://github.com/your-repo/rbi-circulars-chatbot.git
-cd rbi-circulars-chatbot
+git clone https://github.com/harshchi19/Fintech-Hackathon.git
 ```
 
 ### 2️⃣ *Install Dependencies*
@@ -71,7 +73,7 @@ Replace `GOOGLE_API_KEY` in the code with your Google API key.
 
 ### 4️⃣ *Run the App*
 ```bash
-streamlit run app.py
+streamlit run responseretrieval.py
 ```
 
 
