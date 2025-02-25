@@ -31,7 +31,7 @@ The system uses a *custom knowledge base* of *28 PDF circulars* from:
 
 ### ⚙️ Technical Architecture
 
-![image](https://github.com/user-attachments/assets/0fdc4b77-357b-4ddc-8c3c-584a0166419e))
+![image](https://github.com/user-attachments/assets/0fdc4b77-357b-4ddc-8c3c-584a0166419e)
 
 ---
 
@@ -59,7 +59,7 @@ The system uses a *custom knowledge base* of *28 PDF circulars* from:
 - **APIs**: Google (AI, Speech, TTS)  
 - **Hardware**: Microphone  
 
-![SIH2024_IDEA_Presentation_Format (1) pptx](https://github.com/user-attachments/assets/7e097c57-53f7-4a17-9d18-37e51e63b11c)
+![image](https://github.com/user-attachments/assets/7e097c57-53f7-4a17-9d18-37e51e63b11c)
 
 ---
 
