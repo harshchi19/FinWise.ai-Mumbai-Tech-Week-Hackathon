@@ -1,4 +1,4 @@
-![FAISS](https://github.com/user-attachments/assets/602ffe9b-6ca5-4468-b82a-33062090a934)# 📌 RBI Circulars Chatbot - AI-Powered Response Retrieval System
+# 📌 RBI Circulars Chatbot - AI-Powered Response Retrieval System
 
 ## 🚀 Overview
 An *AI-powered chatbot* that processes *Reserve Bank of India (RBI)* financial circulars, enabling users to retrieve *context-aware responses* from regulatory documents. Built with *Google Gemini AI*, it supports *text, images, videos, audio*, and includes *speech-to-text* and *text-to-speech* capabilities.
