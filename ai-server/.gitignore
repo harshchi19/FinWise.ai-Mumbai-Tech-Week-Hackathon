@@ -1,0 +1,81 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Virtual environment
+venv/
+env/
+.venv/
+.env/
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# VSCode settings
+.vscode/
+
+# Pytest cache
+.pytest_cache/
+
+# Coverage reports
+htmlcov/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+
+# MyPy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Pyre type checker
+.pyre/
+
+# Logs
+*.log
+logs/
+
+# FastAPI specific
+instance/
+*.db
+*.sqlite3
+
+# Environment variables
+.env
+.env.*
+
+# Static files and uploads
+staticfiles/
+media/
+uploads/
+
+# Docker
+docker-compose.override.yml
+*.dockerfile
+Dockerfile
+__docker_cache__/
+
+# macOS specific
+.DS_Store
+
+# IDEs
+.idea/
+*.iml
+
+# Profiling data
+.prof
+
+# Cache directories
+.cache/
+__pypackages__/
+
+# Test results
+test-results/
