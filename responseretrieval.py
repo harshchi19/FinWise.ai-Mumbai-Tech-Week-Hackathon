@@ -15,7 +15,7 @@ GOOGLE_API_KEY = "AIzaSyBaVmGidt0Sb8oIr0TZJI6ly26zhK6wxNI"  # Replace with your 
 genai.configure(api_key=GOOGLE_API_KEY)
 
 def page_setup():
-    st.header("Chat with different types of media/files!", anchor=False, divider="blue")
+    st.header("FinWise", anchor=False, divider="blue")
 
     hide_menu_style = """
             <style>
